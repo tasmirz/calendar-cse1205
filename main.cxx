@@ -317,7 +317,8 @@ void remove_todo() {
 void add_todo() {
   std::cout << "Todo : ";
   std::string to;
-  std::cin >> to;
+  getline(std::cin, to);
+  getline(std::cin, to);
   Row &row = Calendar["Todo"].row(to);
   row["todo"].set(Schema::text, &to[0]);
   row.save();
