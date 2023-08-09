@@ -439,29 +439,29 @@ void print_choices() {
 }  // namespace ui
 
 int main() {
-  ui::title();
+  // ui::title();
+  ui::pause();
+  /*   Schema EventsSchema;
+    EventsSchema.setIndex("events").addArrayFields(
+        "events", (new ArraySchema())
+                      ->addField("name", ArraySchema::text)
+                      .addField("description", Schema::text));
 
-  Schema EventsSchema;
-  EventsSchema.setIndex("events").addArrayFields(
-      "events", (new ArraySchema())
-                    ->addField("name", ArraySchema::text)
-                    .addField("description", Schema::text));
-
-  Calendar.add("Events", &EventsSchema);
-  Schema Todo;
-  Todo.setIndex("nill")
-      .addField("todo", Schema::text)
-      .addArrayFields("events", (new ArraySchema())
-                                    ->addField("name", ArraySchema::text)
-                                    .addField("description", Schema::text));
-  ;
-  Schema Diary;
-  Diary.setIndex("nill")
-      .addField("note", Schema::text)
-      .addArrayFields("events",
-                      (new ArraySchema())->addField("name", ArraySchema::text));
-  Calendar.add("Todo", &Todo);
-  Calendar.add("Diary", &Diary);
+    Calendar.add("Events", &EventsSchema);
+    Schema Todo;
+    Todo.setIndex("nill")
+        .addField("todo", Schema::text)
+        .addArrayFields("events", (new ArraySchema())
+                                      ->addField("name", ArraySchema::text)
+                                      .addField("description", Schema::text));
+    ;
+    Schema Diary;
+    Diary.setIndex("nill")
+        .addField("note", Schema::text)
+        .addArrayFields("events",
+                        (new ArraySchema())->addField("name",
+    ArraySchema::text)); Calendar.add("Todo", &Todo); Calendar.add("Diary",
+    &Diary); */
   ui::print_choices();
   // ui::print_todo_choices();
   /*

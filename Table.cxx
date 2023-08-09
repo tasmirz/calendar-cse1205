@@ -28,8 +28,9 @@ Row* Table::operator[](std::string index) {
 }
 bool Table::load(std::string location) {
   this->location = location;
-  if (scheme == nullptr) scheme = new Schema();
-  std::cout << location + "/" + name + "/Schema" << std::endl;
+  // if (scheme == nullptr) //idk if this will cause problem
+  scheme = new Schema();
+
   scheme->load(location + "/" + name + "/Schema");
   return true;
 }
@@ -50,7 +51,6 @@ bool Table::create(std::string location, Schema* schema) {
     }
   }
   if (scheme == 0) scheme = new Schema();
-  std::cout << location << std::endl;
   scheme->load(location + "/" + name + "/Schema");
   return true;
 }
