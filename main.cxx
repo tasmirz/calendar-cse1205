@@ -408,7 +408,6 @@ void print_daily_notes_choices() {
   }
   print_choices();
 }
-
 void print_choices() {
   persistent();
   std::cout << "Menu Action : " << std::endl;
@@ -427,6 +426,8 @@ void print_choices() {
     case 3:
       print_todo_choices();
       break;
+    case 4:
+
     case 0:
       exit(0);
       break;
@@ -440,7 +441,7 @@ void print_choices() {
 
 int main() {
   // ui::title();
-  ui::pause();
+  // ui::pause();
   /*   Schema EventsSchema;
     EventsSchema.setIndex("events").addArrayFields(
         "events", (new ArraySchema())
