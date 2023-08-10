@@ -442,7 +442,7 @@ void print_choices() {
 int main() {
   // ui::title();
   // ui::pause();
-  /*   Schema EventsSchema;
+  /*Schema EventsSchema;
     EventsSchema.setIndex("events").addArrayFields(
         "events", (new ArraySchema())
                       ->addField("name", ArraySchema::text)
