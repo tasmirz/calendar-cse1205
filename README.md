@@ -63,6 +63,7 @@ The Codebase for the UI is just basic. However, the requirements for this projec
 * More than 4 Classes
 * Usage of operator overloading
 * Usage of friend classes 
+* Usage of friend classes 
 * atlest 4 features
 
 were met by the `Database` library (coded for this project) used in this project
@@ -96,3 +97,16 @@ Row &row = Calendar["Events"].row("210101");
 Row *aa = Calendar["Events"]["210101"];
 std::cout << (char *)((*aa)("events")[0]["name"].get()) << std::endl;
 ```
+
+If all the table schemas has been created previously the first line of the above code loads all table infomation on the memory. and is acsesible by `db["tablename"]`. Once a table has been added, it is automatically loaded the next time from the firstline.
+
+However the rows are not opened as the table opens, it is done to save memory.
+It is only cpoied to memory during retrival.
+
+## Future plans
+- [ ] Indexing the database
+- [ ] Solving memory leak issues
+- [ ] Allowing efficient searching for other data
+- [ ] Adding a server interface, where an external progam can communicate with the database
+- [ ] Making the Notes section more interactive
+- [ ] Add option to view other months than current month
