@@ -72,7 +72,7 @@ Here is an example usage of the libray
 
 ```cpp
 Database Calendar("Calendar");
-
+// creates all tables and db dir automatically
 
 Schema EventsSchema;
 EventsSchema.setIndex("events")
