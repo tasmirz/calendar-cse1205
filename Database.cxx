@@ -18,19 +18,16 @@ Database::Database(std::string name) {
 
   std::string path = name;
 
-  // for (const auto& entry : std::filesystem::directory_iterator(path)) {
-  //   if (std::filesystem::is_directory(entry)) {
-  //     // load tables iteratively
-  //     std::cout << "Loading tables reach " << std::endl;
-  //     tables[entry.path().filename().string()] =
-  //         new Table();  // entry.path().filename()
-  //     std::cout << entry.path().filename().string() << std::endl;
-  //     tables[entry.path().filename().string()]->name =
-  //         entry.path().filename().string();
-  //
-  //    tables[entry.path().filename().string()]->load(name);
-  //  }
-  //}
+  for (const auto& entry : std::filesystem::directory_iterator(path)) {
+    if (std::filesystem::is_directory(entry)) {
+      // load tables iteratively
+      tables[entry.path().filename().string()] =
+          new Table();  // entry.path().filename()
+      tables[entry.path().filename().string()]->name =
+          entry.path().filename().string();
+      tables[entry.path().filename().string()]->load(name);
+    }
+  }
 }
 bool Database::exist(std::string tablename) {
   if (tables.find(tablename) == tables.end()) return false;
