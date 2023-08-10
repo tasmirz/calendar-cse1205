@@ -110,3 +110,4 @@ It is only cpoied to memory during retrival.
 - [ ] Adding a server interface, where an external progam can communicate with the database
 - [ ] Making the Notes section more interactive
 - [ ] Add option to view other months than current month
+- [ ] `row("events")[0]["name"].set(Schema::text, vstr("1esty"));` // here remove data type in first argumen; read that from table schema, same goes for get()
