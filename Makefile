@@ -61,7 +61,7 @@ endif
 ####
 
 
-.PUNY:debug build release launch clean prepare clean_raw
+.PHONY:debug build release launch clean prepare clean_raw exploits
 
 
 $(obj_out_dir)/%.o : %.cxx $(header)
@@ -89,3 +89,8 @@ clean_raw:
 	@ rm -r build
 
 clean: clean_raw prepare
+
+exploits: ArrayCell.cxx ArrayScheme.cxx Cell.cxx Database.cxx Date.cxx Row.cxx Schema.cxx Table.cxx exploits/regression.cxx
+	g++ -std=gnu++2b -O0 -g -Wall -I. exploits/regression.cxx ArrayCell.cxx ArrayScheme.cxx Cell.cxx Database.cxx Date.cxx Row.cxx Schema.cxx Table.cxx -o exploits/regression
+	@ echo "Running exploit regression suite:"
+	@ for i in 1 2 3 4 5 6 7; do ./exploits/regression $$i >/dev/null 2>&1 && echo "  exploit $$i: OK" || echo "  exploit $$i: FAIL (exit $$?)"; done

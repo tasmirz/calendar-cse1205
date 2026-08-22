@@ -2,10 +2,31 @@
 
 #include "header.hpp"
 namespace fs = std::filesystem;
+namespace {
+// Reject path-traversal sequences in row filenames. Row indices become
+// filenames; an attacker who can choose the index (e.g. add_todo, where the
+// todo text itself is the filename) could otherwise escape the table dir
+// and create or read files anywhere the process has access.
+bool safeIndex(const std::string& idx) {
+  if (idx.empty()) return false;
+  if (idx.find('/') != std::string::npos) return false;
+  if (idx.find('\\') != std::string::npos) return false;
+  if (idx == "." || idx == "..") return false;
+  if (idx[0] == '.') return false;  // dotfiles
+  // Cap length so we never overflow any downstream buffer.
+  if (idx.size() > 4096) return false;
+  return true;
+}
+}  // namespace
 Table::Table() {}
 Row& Table::row(std::string index) {
   if (scheme == nullptr) {
     std::cerr << "Table::row called before schema was loaded: " << name
+              << std::endl;
+    std::exit(1);
+  }
+  if (!safeIndex(index)) {
+    std::cerr << "Table::row rejected unsafe index: '" << index << "'"
               << std::endl;
     std::exit(1);
   }
@@ -19,6 +40,7 @@ Row* Table::operator[](std::string index) {
               << std::endl;
     return nullptr;
   }
+  if (!safeIndex(index)) return nullptr;
   for (const auto& entry :
        fs::directory_iterator(location + "/" + name + "/")) {
     if (fs::is_regular_file(entry)) {
@@ -29,7 +51,13 @@ Row* Table::operator[](std::string index) {
             location + "/" + name + "/" +
                 index);  // Row(*scheme, entry.path().filename().string());
         ret->index = index;
-        ret->load();
+        if (!ret->load()) {
+          // Load rejected the file as malformed. Don't hand back a Row that
+          // looks loaded but isn't — the caller would then `save()` it and
+          // either write garbage or, worse, surface null cell data.
+          delete ret;
+          return nullptr;
+        }
         return ret;
       }
     }
@@ -65,11 +93,13 @@ bool Table::create(std::string location, Schema* schema) {
   return true;
 }
 bool Table::exists(std::string str) {
+  if (!safeIndex(str)) return false;
   if (fs::exists(location + "/" + name + "/" + str)) return true;
 
   return false;
 }
 bool Table::remove(std::string str) {
+  if (!safeIndex(str)) return false;
   if (exists(str)) {
     std::filesystem::remove(location + "/" + name + "/" + str);
   }
