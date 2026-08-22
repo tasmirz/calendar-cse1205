@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 #include <iostream>
 #include <iterator>
@@ -50,9 +51,9 @@ void displayCalendar(int year, int month, const std::vector<int> &eventDays,
 
   int dayCount = 1;
   for (int i = 0; i < 6; i++) {
-    std::cout << "\   ";
+    std::cout << "   ";
     for (int j = 0; j < 7; j++) {
-      if (i == 0 && j < startDay + 1) {
+      if (i == 0 && j < startDay) {
         std::cout << std::setw(W) << " ";
       } else if (dayCount <= daysInMonth) {
         bool hasEvent = std::find(eventDays.begin(), eventDays.end(),
@@ -102,6 +103,11 @@ void calendar() {
   int today = localTime->tm_mday;
   int weekday = localTime->tm_wday;
 
+  // weekday is the day-of-week for *today*, not for the 1st. Derive the
+  // first-of-month weekday so the grid aligns.  weekday - (today-1) may be
+  // negative, so add 7 and mod.
+  int firstDayWeekday = (weekday - (today - 1) % 7 + 7) % 7;
+
   int a = year * 10000 + month * 100;
   std::vector<int> eventDays;
   for (int i = 1; i <= Date::daysInMonth(month, year); i++) {
@@ -111,7 +117,7 @@ void calendar() {
     }
   }
 
-  displayCalendar(year, month, eventDays, weekday, today);
+  displayCalendar(year, month, eventDays, firstDayWeekday, today);
 }
 void todo_list() {
   std::cout << "TodoList :\n";
@@ -157,13 +163,16 @@ void list_in_range() {
     if (Calendar["Events"].exists(key)) {
       std::cout << (qq + i).string() << std::endl;
       Row *row = Calendar["Events"][key];
-      for (int i = 0; i < (*row)("events").size(); i++) {
-        std::cout << i + 1 << ". Name        : "
-                  << (char *)((*row)("events")[i]["name"].get()) << std::endl;
-        std::cout << "   Description : "
-                  << (char *)((*row)("events")[i]["description"].get())
-                  << std::endl
-                  << std::endl;
+      if (row) {
+        for (int j = 0; j < (*row)("events").size(); j++) {
+          std::cout << j + 1 << ". Name        : "
+                    << (char *)((*row)("events")[j]["name"].get()) << std::endl;
+          std::cout << "   Description : "
+                    << (char *)((*row)("events")[j]["description"].get())
+                    << std::endl
+                    << std::endl;
+        }
+        delete row;
       }
     }
   }
@@ -187,28 +196,32 @@ void delete_event() {
   // std::cout << key << std::endl;
   if (Calendar["Events"].exists(key)) {
     Row *row = Calendar["Events"][key];
-    for (int i = 0; i < (*row)("events").size(); i++) {
-      std::cout << i + 1 << ". Name        : "
-                << (char *)((*row)("events")[i]["name"].get()) << std::endl;
-      std::cout << "   Description : "
-                << (char *)((*row)("events")[i]["description"].get())
-                << std::endl
-                << std::endl;
-    }
+    if (row) {
+      for (int i = 0; i < (*row)("events").size(); i++) {
+        std::cout << i + 1 << ". Name        : "
+                  << (char *)((*row)("events")[i]["name"].get()) << std::endl;
+        std::cout << "   Description : "
+                  << (char *)((*row)("events")[i]["description"].get())
+                  << std::endl
+                  << std::endl;
+      }
 
-    int what;
-    std::cout << "Which One : ";
-    std::cin >> what;
-    if (what >= 1 && what <= (*row)("events").size()) {
-      (*row)("events").erase((*row)("events").begin() + what - 1);
-      if ((*row)("events").size() > 0)
-        row->save();
-      else
-        std::filesystem::remove("Calendar/Events/" + key);
+      int what;
+      std::cout << "Which One : ";
+      std::cin >> what;
+      if (what >= 1 && what <= (*row)("events").size()) {
+        (*row)("events").erase((*row)("events").begin() + what - 1);
+        if ((*row)("events").size() > 0)
+          row->save();
+        else
+          std::filesystem::remove("Calendar/Events/" + key);
+      }
+      delete row;
     }
     pause();
   } else {
     std::cout << "No event on this particular day\n";
+    pause();
   }
 }
 void display_event() {
@@ -229,13 +242,16 @@ void display_event() {
   // std::cout << key << std::endl;
   if (Calendar["Events"].exists(key)) {
     Row *row = Calendar["Events"][key];
-    for (int i = 0; i < (*row)("events").size(); i++) {
-      std::cout << i + 1 << ". Name        : "
-                << (char *)((*row)("events")[i]["name"].get()) << std::endl;
-      std::cout << "   Description : "
-                << (char *)((*row)("events")[i]["description"].get())
-                << std::endl
-                << std::endl;
+    if (row) {
+      for (int i = 0; i < (*row)("events").size(); i++) {
+        std::cout << i + 1 << ". Name        : "
+                  << (char *)((*row)("events")[i]["name"].get()) << std::endl;
+        std::cout << "   Description : "
+                  << (char *)((*row)("events")[i]["description"].get())
+                  << std::endl
+                  << std::endl;
+      }
+      delete row;
     }
   } else {
     std::cout << "No event on this particular day\n";
@@ -262,21 +278,27 @@ void addEvent() {
   std::cout << "Event Description : ";
   std::string desc;
   std::getline(std::cin, desc);
+  auto dupText = [](const std::string& s) -> void* {
+    char* p = new char[s.size() + 1];
+    strcpy(p, s.c_str());
+    return p;
+  };
   if (!Calendar["Events"].exists(key)) {
     Row &row = Calendar["Events"].row(key);
     row("events").push_back(ArrayCell());
-    row("events")[0]["name"].set(Schema::text, vstr(event_name.c_str()));
-    row("events")[0]["description"].set(Schema::text, vstr(desc.c_str()));
+    row("events")[0]["name"].set(Schema::text, dupText(event_name));
+    row("events")[0]["description"].set(Schema::text, dupText(desc));
     row.save();
     delete &row;
   } else {
     Row *aa = Calendar["Events"][key];
     (*aa)("events").push_back(ArrayCell());
     (*aa)("events")[(*aa)("events").size() - 1]["name"].set(
-        Schema::text, vstr(event_name.c_str()));
+        Schema::text, dupText(event_name));
     (*aa)("events")[(*aa)("events").size() - 1]["description"].set(
-        Schema::text, vstr(desc.c_str()));
+        Schema::text, dupText(desc));
     aa->save();
+    delete aa;
   }
   std::cout << "Successfully saved" << std::endl;
   pause();
@@ -351,8 +373,13 @@ void add_todo() {
   getline(std::cin, to);
   getline(std::cin, to);
   Row &row = Calendar["Todo"].row(to);
-  row["todo"].set(Schema::text, vstr(to.c_str()));
+  {
+    char* p = new char[to.size() + 1];
+    strcpy(p, to.c_str());
+    row["todo"].set(Schema::text, p);
+  }
   row.save();
+  delete &row;
   std::cout << "Saved\n";
   pause();
 }
@@ -392,8 +419,13 @@ void daily_note() {
 
   int a = year * 10000 + month * 100 + day;
   Row &q = Calendar["Diary"].row(std::to_string(a));
-  q["note"].set(Schema::text, (void *)s.c_str());
+  {
+    char* p = new char[s.size() + 1];
+    strcpy(p, s.c_str());
+    q["note"].set(Schema::text, p);
+  }
   q.save();
+  delete &q;
   std::cout << "Diary written" << std::endl;
   pause();
 }
@@ -412,8 +444,11 @@ void view_note() {
   std::string key = std::to_string(master);
   if (Calendar["Diary"].exists(key)) {
     Row *rr = Calendar["Diary"][key];
-    std::cout << (char *)(*rr)["note"].get() << std::endl;
-    // rr->save();
+    if (rr) {
+      char* p = (char *)(*rr)["note"].get();
+      std::cout << (p ? p : "(empty)") << std::endl;
+      delete rr;
+    }
     pause();
   } else {
     std::cout << "Not found" << std::endl;

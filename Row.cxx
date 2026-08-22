@@ -56,6 +56,7 @@ bool Row::load() {
     if (i.first == "") continue;
     int totalField = 0;
     file.read((char*)&totalField, sizeof(int));
+    if (file.fail()) return false;
     if (totalField < 0 || totalField > kMaxTotalField) return false;
     for (int k = 0; k < totalField; k++) {
       ArrayCell qq;
@@ -66,23 +67,29 @@ bool Row::load() {
             if (!readCStr(s, kMaxTextLen)) return false;
             char* qqq = new char[s.size() + 1];
             strcpy(qqq, s.c_str());
-            Cell cc;
-            cc.set(j.second, qqq);
-            qq[j.first] = cc;
+            qq[j.first].set(j.second, qqq);
           } break;
           case Schema::integer: {
-            // needs correction
-            int* data = (int*)cells[j.first].data;
+            int* data = new int;
             file.read((char*)data, sizeof(int));
+            if (file.fail()) {
+              delete data;
+              return false;
+            }
+            qq[j.first].set(j.second, data);
           } break;
           case Schema::floating: {
-            // needs correction
-            double* data = (double*)cells[j.first].data;
+            double* data = new double;
             file.read((char*)data, sizeof(double));
+            if (file.fail()) {
+              delete data;
+              return false;
+            }
+            qq[j.first].set(j.second, data);
           } break;
         }
       }
-      array_cells[i.first].push_back(qq);
+      array_cells[i.first].push_back(std::move(qq));
     }
   }
   file.close();
@@ -106,12 +113,9 @@ Cell* Row::find_cell(std::string fieldname) {
 }
 
 bool Row::save() {
-  std::cout << location << std::endl;
-  std::cout << index << std::endl;
   std::fstream file(
       location, std::fstream::binary | std::fstream::out | std::fstream::trunc);
-
-  std::cout << location << std::endl;
+  if (!file.is_open()) return false;
   for (auto i : scheme->scheme) {
     if (i.first == "") continue;
     switch (i.second) {
@@ -139,7 +143,6 @@ bool Row::save() {
   for (auto i : scheme->array_scheme) {
     if (i.first == "") continue;
     int to = array_cells[i.first].size();
-    std::cout << to << std::endl;
     file.write((char*)&(to), sizeof(int));
     for (int k = 0; k < to; k++) {
       for (auto j : i.second.scheme) {
@@ -154,11 +157,15 @@ bool Row::save() {
             }
           } break;
           case Schema::integer: {
-            int* data = (int*)cells[j.first].data;
+            auto it = array_cells[i.first][k].cells.find(j.first);
+            if (it == array_cells[i.first][k].cells.end() || !it->second.data) break;
+            int* data = (int*)it->second.data;
             file.write((char*)data, sizeof(int));
           } break;
           case Schema::floating: {
-            double* data = (double*)cells[j.first].data;
+            auto it = array_cells[i.first][k].cells.find(j.first);
+            if (it == array_cells[i.first][k].cells.end() || !it->second.data) break;
+            double* data = (double*)it->second.data;
             file.write((char*)data, sizeof(double));
           } break;
         }

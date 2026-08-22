@@ -79,6 +79,10 @@ class Cell {
   bool set(int size, void* data);
   void* get();
   Cell();
+  Cell(const Cell& other);
+  Cell(Cell&& other) noexcept;
+  Cell& operator=(const Cell& other);
+  Cell& operator=(Cell&& other) noexcept;
   ~Cell();
 };
 
@@ -131,6 +135,11 @@ class ArrayCell {
 
  public:
   Cell& operator[](std::string);
+  ArrayCell() = default;
+  ArrayCell(const ArrayCell& other) = default;
+  ArrayCell(ArrayCell&& other) noexcept = default;
+  ArrayCell& operator=(const ArrayCell& other) = default;
+  ArrayCell& operator=(ArrayCell&& other) noexcept = default;
 };
 
 class Database {

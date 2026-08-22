@@ -41,8 +41,10 @@ Row* Table::operator[](std::string index) {
     return nullptr;
   }
   if (!safeIndex(index)) return nullptr;
+  std::error_code ec;
   for (const auto& entry :
-       fs::directory_iterator(location + "/" + name + "/")) {
+       fs::directory_iterator(location + "/" + name + "/", ec)) {
+    if (ec) return nullptr;
     if (fs::is_regular_file(entry)) {
       // std::cout << "File: " << entry.path().filename() << std::endl;
       if (entry.path().filename().string() == index) {
@@ -66,7 +68,7 @@ Row* Table::operator[](std::string index) {
 }
 bool Table::load(std::string location) {
   this->location = location;
-  // if (scheme == nullptr) //idk if this will cause problem
+  if (scheme) delete scheme;
   scheme = new Schema();
 
   scheme->load(location + "/" + name + "/Schema");
