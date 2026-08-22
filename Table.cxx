@@ -4,11 +4,21 @@
 namespace fs = std::filesystem;
 Table::Table() {}
 Row& Table::row(std::string index) {
+  if (scheme == nullptr) {
+    std::cerr << "Table::row called before schema was loaded: " << name
+              << std::endl;
+    std::exit(1);
+  }
   Row* ret = new Row(scheme, location + "/" + name + "/" + index);
   ret->index = index;
   return *ret;
 }
 Row* Table::operator[](std::string index) {
+  if (scheme == nullptr) {
+    std::cerr << "Table::operator[] called before schema was loaded: " << name
+              << std::endl;
+    return nullptr;
+  }
   for (const auto& entry :
        fs::directory_iterator(location + "/" + name + "/")) {
     if (fs::is_regular_file(entry)) {

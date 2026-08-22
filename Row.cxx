@@ -21,10 +21,10 @@ bool Row::load() {
       case Schema::text: {
         char c;
         std::string s = "";
-        do {
-          file.read(&c, sizeof(char));
+        while (file.get(c)) {
+          if (c == 0) break;
           s += c;
-        } while (c != 0 && !file.eof());
+        }
         char* qqq = new char[s.size() + 1];
         strcpy(qqq, s.c_str());
 
@@ -43,10 +43,9 @@ bool Row::load() {
           case Schema::text: {
             std::string s = "";
             char c;
-            while (!file.eof()) {
-              file.read(&c, sizeof(char));
+            while (file.get(c)) {
+              if (c == 0) break;
               s += c;
-              if (!c) break;
             }
             char* qqq = new char[s.size() + 1];
             strcpy(qqq, s.c_str());
@@ -91,8 +90,8 @@ bool Row::save() {
     switch (i.second) {
       case Schema::text: {
         char* data = (char*)cells[i.first].data;
+        if (data == 0) break;
         while (1) {
-          if (data == 0) break;
           file.write((char*)data, sizeof(char));
           if (!*data) break;
           data++;
@@ -100,10 +99,12 @@ bool Row::save() {
       } break;
       case Schema::integer: {
         int* data = (int*)cells[i.first].data;
+        if (data == 0) break;
         file.write((char*)data, sizeof(int));
       } break;
       case Schema::floating: {
         double* data = (double*)cells[i.first].data;
+        if (data == 0) break;
         file.write((char*)data, sizeof(double));
       }
     }
@@ -118,9 +119,9 @@ bool Row::save() {
         switch (j.second) {
           case Schema::text: {
             char* data = (char*)array_cells[i.first][k][j.first].data;
+            if (data == 0) break;
             while (1) {
               file.write((char*)data, sizeof(char));
-              if (data == 0) break;
               if (!*data) break;
               data++;
             }

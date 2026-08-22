@@ -105,7 +105,7 @@ class Row {
 };
 
 class Table {
-  Schema* scheme;
+  Schema* scheme = nullptr;
   std::string location;
   std::string name;
 

@@ -16,14 +16,18 @@ Date Date::operator+(int days) {
   Date newDate = *this;  // cpied itself
   newDate.day += days;
 
-  while (newDate.day > daysInMonth(newDate.month, newDate.year)) {
-    newDate.day -= daysInMonth(newDate.month, newDate.year);
-    newDate.month++;
-  }
-
-  if (newDate.month > 12) {
-    newDate.month = 1;
-    newDate.year++;
+  while (true) {
+    int dim = daysInMonth(newDate.month, newDate.year);
+    if (newDate.day > dim) {
+      newDate.day -= dim;
+      newDate.month++;
+      if (newDate.month > 12) {
+        newDate.month = 1;
+        newDate.year++;
+      }
+    } else {
+      break;
+    }
   }
 
   return newDate;
@@ -33,22 +37,27 @@ Date Date::operator-(int days) {
   newDate.day -= days;
 
   while (newDate.day < 1) {
-    newDate.day += daysInMonth(newDate.month, newDate.year);
+    int dim = daysInMonth(newDate.month, newDate.year);
+    newDate.day += dim;
     newDate.month--;
-  }
-
-  if (newDate.month < 1) {
-    newDate.month = 12;
-    newDate.year--;
+    if (newDate.month < 1) {
+      newDate.month = 12;
+      newDate.year--;
+    }
   }
 
   return newDate;
 }
 
 int Date::daysInMonth(int month, int year) {
+  // Defensive clamp: a malformed Date may produce month outside [1,12]
+  // (e.g. arithmetic that didn't fully normalize). Snap to January so
+  // we never read past the end of the lookup table.
+  while (month < 1) month += 12;
+  while (month > 12) month -= 12;
   int arr[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
   if (month == 2 &&
       ((year % 400 == 0) || ((year % 100 != 0) && (year % 4 == 0))))
-    arr[2]++;
+    arr[1]++;  // arr[1] is February; arr[2] is March.
   return arr[month - 1];
 };

@@ -13,6 +13,7 @@ Database Calendar("Calendar");
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 namespace ui {
 void print_choices();
 void title() {
@@ -75,7 +76,14 @@ int choice() {
   std::cout << std::endl << std::endl;
   std::cout << "Choose an option : ";
   int n;
-  std::cin >> n;
+  if (!(std::cin >> n)) {
+    // Non-numeric input: clear the fail state and discard the rest of the
+    // line so the next prompt starts on a clean stream. Without this, every
+    // prompt would re-read the same garbage and the menu would loop forever.
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    return -1;
+  }
   return n;
 }
 void clear() { system("clear"); }
@@ -188,7 +196,7 @@ void delete_event() {
     }
     pause();
   } else {
-    std::cout << "No event on this partcular day\n";
+    std::cout << "No event on this particular day\n";
   }
 }
 void display_event() {
@@ -217,9 +225,8 @@ void display_event() {
                 << std::endl
                 << std::endl;
     }
-    pause();
   } else {
-    std::cout << "No event on this partcular day\n";
+    std::cout << "No event on this particular day\n";
   }
   pause();
 }
@@ -246,50 +253,52 @@ void addEvent() {
   if (!Calendar["Events"].exists(key)) {
     Row &row = Calendar["Events"].row(key);
     row("events").push_back(ArrayCell());
-    row("events")[0]["name"].set(Schema::text, vstr(&event_name[0]));
-    row("events")[0]["description"].set(Schema::text, vstr(&desc[0]));
+    row("events")[0]["name"].set(Schema::text, vstr(event_name.c_str()));
+    row("events")[0]["description"].set(Schema::text, vstr(desc.c_str()));
     row.save();
     delete &row;
   } else {
     Row *aa = Calendar["Events"][key];
     (*aa)("events").push_back(ArrayCell());
     (*aa)("events")[(*aa)("events").size() - 1]["name"].set(
-        Schema::text, vstr(&event_name[0]));
+        Schema::text, vstr(event_name.c_str()));
     (*aa)("events")[(*aa)("events").size() - 1]["description"].set(
-        Schema::text, vstr(&desc[0]));
+        Schema::text, vstr(desc.c_str()));
     aa->save();
   }
   std::cout << "Successfully saved" << std::endl;
   pause();
 }
 void print_event_choices() {
-  persistent();
-  std::cout << "Menu Action : " << std::endl;
-  std::cout << "1. Display event" << std::endl;
-  std::cout << "2. List events in range" << std::endl;
-  std::cout << "3. Add event" << std::endl;
-  std::cout << "4. Delete event" << std::endl;
-  std::cout << "5. Back to previous menu" << std::endl;
-  int chce = choice();
-  switch (chce) {
-    case 1:
-      display_event();
-      break;
-    case 2:
-      list_in_range();
-      break;
-    case 3:
-      addEvent();
-      break;
-    case 4:
-      delete_event();
-      break;
-    case 5:
-      return;
-    default:
-      break;
+  while (true) {
+    persistent();
+    std::cout << "Menu Action : " << std::endl;
+    std::cout << "1. Display event" << std::endl;
+    std::cout << "2. List events in range" << std::endl;
+    std::cout << "3. Add event" << std::endl;
+    std::cout << "4. Delete event" << std::endl;
+    std::cout << "5. Back to previous menu" << std::endl;
+    int chce = choice();
+    switch (chce) {
+      case 1:
+        display_event();
+        break;
+      case 2:
+        list_in_range();
+        break;
+      case 3:
+        addEvent();
+        break;
+      case 4:
+        delete_event();
+        break;
+      case 5:
+        return;
+      default:
+        // Bad input: choice() already consumed the garbage. Loop and ask again.
+        continue;
+    }
   }
-  print_event_choices();
 }
 void pause() { system("read -n1 -r -p \"Press any key to continue...\" key"); }
 void remove_todo() {
@@ -307,7 +316,8 @@ void remove_todo() {
   std::cout << "Enter id to remove todo : ";
   int aa;
   std::cin >> aa;
-  if (std::filesystem::exists("Calendar/Todo/" + s[aa - 1])) {
+  if (aa >= 1 && aa <= (int)s.size() &&
+      std::filesystem::exists("Calendar/Todo/" + s[aa - 1])) {
     std::filesystem::remove("Calendar/Todo/" + s[aa - 1]);
     std::cout << "Successfully done\n";
   } else
@@ -320,27 +330,30 @@ void add_todo() {
   getline(std::cin, to);
   getline(std::cin, to);
   Row &row = Calendar["Todo"].row(to);
-  row["todo"].set(Schema::text, &to[0]);
+  row["todo"].set(Schema::text, vstr(to.c_str()));
   row.save();
   std::cout << "Saved\n";
+  pause();
 }
 void print_todo_choices() {
-  persistent();
-  std::cout << "1. Add todo" << std::endl;
-  std::cout << "2. Done todo" << std::endl;
-  std::cout << "3. Back to previous menu" << std::endl;
-  int chce = choice();
-  switch (chce) {
-    case 1:
-      add_todo();
-      break;
-    case 2:
-      remove_todo();
-      break;
-    case 3:
-      break;
-    default:
-      break;
+  while (true) {
+    persistent();
+    std::cout << "1. Add todo" << std::endl;
+    std::cout << "2. Done todo" << std::endl;
+    std::cout << "3. Back to previous menu" << std::endl;
+    int chce = choice();
+    switch (chce) {
+      case 1:
+        add_todo();
+        break;
+      case 2:
+        remove_todo();
+        break;
+      case 3:
+        return;
+      default:
+        continue;
+    }
   }
 }
 void daily_note() {
@@ -358,11 +371,10 @@ void daily_note() {
 
   int a = year * 10000 + month * 100 + day;
   Row &q = Calendar["Diary"].row(std::to_string(a));
-  q["note"].set(Schema::text, (void *)&s[0]);
+  q["note"].set(Schema::text, (void *)s.c_str());
   q.save();
   std::cout << "Diary written" << std::endl;
   pause();
-  int weekday = localTime->tm_wday;
 }
 void view_note() {
   std::cout << "Enter" << std::endl << "Day Month Year : ";
@@ -388,53 +400,55 @@ void view_note() {
   }
 }
 void print_daily_notes_choices() {
-  persistent();
-  std::cout << "Press the corresponding option for specific action"
-            << std::endl;
-  std::cout << "1. View of" << std::endl;
-  std::cout << "2. Write today's note" << std::endl;
-  std::cout << "3. Back to previous menu" << std::endl;
-  int chce = choice();
-  switch (chce) {
-    case 1:
-      view_note();
-      break;
-    case 2:
-      daily_note();
-      // exit(0);
-      break;
-    default:
-      break;
+  while (true) {
+    persistent();
+    std::cout << "Press the corresponding option for specific action"
+              << std::endl;
+    std::cout << "1. View of" << std::endl;
+    std::cout << "2. Write today's note" << std::endl;
+    std::cout << "3. Back to previous menu" << std::endl;
+    int chce = choice();
+    switch (chce) {
+      case 1:
+        view_note();
+        break;
+      case 2:
+        daily_note();
+        break;
+      case 3:
+        return;
+      default:
+        continue;
+    }
   }
-  print_choices();
 }
 void print_choices() {
-  persistent();
-  std::cout << "Menu Action : " << std::endl;
-  std::cout << "1. Events" << std::endl;
-  std::cout << "2. Daily Note" << std::endl;
-  std::cout << "3. Todos" << std::endl;
-  std::cout << "0. Exit" << std::endl;
-  int chce = choice();
-  switch (chce) {
-    case 1:
-      print_event_choices();
-      break;
-    case 2:
-      print_daily_notes_choices();
-      break;
-    case 3:
-      print_todo_choices();
-      break;
-    case 4:
-
-    case 0:
-      exit(0);
-      break;
-    default:
-      break;
+  while (true) {
+    persistent();
+    std::cout << "Menu Action : " << std::endl;
+    std::cout << "1. Events" << std::endl;
+    std::cout << "2. Daily Note" << std::endl;
+    std::cout << "3. Todos" << std::endl;
+    std::cout << "0. Exit" << std::endl;
+    int chce = choice();
+    switch (chce) {
+      case 1:
+        print_event_choices();
+        break;
+      case 2:
+        print_daily_notes_choices();
+        break;
+      case 3:
+        print_todo_choices();
+        break;
+      case 0:
+        exit(0);
+        break;
+      default:
+        // Bad input: choice() already cleared the stream. Loop and ask again.
+        continue;
+    }
   }
-  print_choices();
 }
 
 }  // namespace ui

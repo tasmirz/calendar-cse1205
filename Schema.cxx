@@ -62,62 +62,50 @@ bool Schema::load(std::string filename) {
     char c;
 
     index = "";
-    do {
-      file.read(&c, sizeof(char));
+    while (file.get(c)) {
       if (c == 0) break;
       index += c;
-    } while (!file.eof());
+    }
     // read index
 
-    while (!file.eof()) {
+    while (true) {
       int type;
-      // reading number
       file.read((char*)&type, sizeof(int));
-
-      /* std::string s = "";
-      do {
-        file.read(&c, sizeof(char));
-        if (c == 0) break;
-        s += c;
-      } while (!file.eof());
-      addField(s, type);
-
-      file.read((char*)&type, sizeof(int)); */
+      if (file.eof() || file.fail()) break;
 
       if (type == Schema::array) {
         // read filed name
         std::string s = "";
-        do {
-          file.read(&c, sizeof(char));
+        while (file.get(c)) {
           if (c == 0) break;
           s += c;
-        } while (!file.eof());
+        }
 
         int fields;
         file.read((char*)&(fields), sizeof(int));
+        if (file.eof() || file.fail()) break;
 
         ArraySchema arr;
         for (int i = 0; i < fields; i++) {
           int atype;
           file.read((char*)&atype, sizeof(int));
+          if (file.eof() || file.fail()) break;
           std::string si = "";
 
-          do {
-            file.read(&c, sizeof(char));
+          while (file.get(c)) {
             if (c == 0) break;
             si += c;
-          } while (!file.eof());
+          }
 
           if (si.size() > 0) arr.addField(si, atype);
         }
         addArrayFields(s, arr);
       } else {
         std::string s = "";
-        do {
-          file.read(&c, sizeof(char));
+        while (file.get(c)) {
           s += c;
           if (c == 0) break;
-        } while (!file.eof());
+        }
         if (s.size() > 0) addField(s, type);
       }
     }
