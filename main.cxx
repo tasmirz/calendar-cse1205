@@ -111,8 +111,13 @@ void todo_list() {
   std::string folderPath = "Calendar/Todo";  // Replace with the actual path
   // std::vector<std::string> s;
   int k = 0;
-  for (const auto &entry : std::filesystem::directory_iterator(folderPath)) {
-    if (std::filesystem::is_regular_file(entry.path()) &&
+  // Use the error-code overload of directory_iterator: the directory may
+  // not exist yet (first run, fresh `Calendar/`), and the throwing overload
+  // would abort the program.
+  std::error_code ec;
+  for (const auto &entry :
+       std::filesystem::directory_iterator(folderPath, ec)) {
+    if (!ec && std::filesystem::is_regular_file(entry.path()) &&
         entry.path().filename() != "Schema") {
       // s.push_back(entry.path().filename().string());
       std::cout << ++k << ". " << entry.path().filename().string() << std::endl;
@@ -304,13 +309,22 @@ void pause() { system("read -n1 -r -p \"Press any key to continue...\" key"); }
 void remove_todo() {
   std::string folderPath = "Calendar/Todo";  // Replace with the actual path
   std::vector<std::string> s;
-  for (const auto &entry : std::filesystem::directory_iterator(folderPath)) {
-    if (std::filesystem::is_regular_file(entry.path()) &&
+  // error-code overload: tolerate a missing Todo directory.
+  std::error_code ec;
+  for (const auto &entry :
+       std::filesystem::directory_iterator(folderPath, ec)) {
+    if (!ec && std::filesystem::is_regular_file(entry.path()) &&
         entry.path().filename() != "Schema") {
       s.push_back(entry.path().filename().string());
       //   std::cout << s.size() << " . " << entry.path().filename().string()
       // << std::endl;
     }
+  }
+
+  if (s.empty()) {
+    std::cout << "No todos to remove\n";
+    pause();
+    return;
   }
 
   std::cout << "Enter id to remove todo : ";
@@ -454,29 +468,24 @@ void print_choices() {
 }  // namespace ui
 
 int main() {
-  // ui::title();
-  // ui::pause();
-  /*Schema EventsSchema;
-    EventsSchema.setIndex("events").addArrayFields(
-        "events", (new ArraySchema())
-                      ->addField("name", ArraySchema::text)
-                      .addField("description", Schema::text));
+  // Register tables with the database before launching the UI. The schemas
+  // describe the on-disk layout for each table — they are written on the
+  // first run and loaded from disk on subsequent runs.
+  ArraySchema eventsArr;
+  eventsArr.addField("name", ArraySchema::text)
+      .addField("description", Schema::text);
+  Schema EventsSchema;
+  EventsSchema.setIndex("events").addArrayFields("events", eventsArr);
+  Calendar.add("Events", &EventsSchema);
 
-    Calendar.add("Events", &EventsSchema);
-    Schema Todo;
-    Todo.setIndex("nill")
-        .addField("todo", Schema::text)
-        .addArrayFields("events", (new ArraySchema())
-                                      ->addField("name", ArraySchema::text)
-                                      .addField("description", Schema::text));
-    ;
-    Schema Diary;
-    Diary.setIndex("nill")
-        .addField("note", Schema::text)
-        .addArrayFields("events",
-                        (new ArraySchema())->addField("name",
-    ArraySchema::text)); Calendar.add("Todo", &Todo); Calendar.add("Diary",
-    &Diary); */
+  Schema Todo;
+  Todo.setIndex("nill").addField("todo", Schema::text);
+  Calendar.add("Todo", &Todo);
+
+  Schema Diary;
+  Diary.setIndex("nill").addField("note", Schema::text);
+  Calendar.add("Diary", &Diary);
+
   ui::print_choices();
   // ui::print_todo_choices();
   /*

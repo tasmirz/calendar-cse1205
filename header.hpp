@@ -97,6 +97,7 @@ class Row {
   ~Row();
   Cell& operator[](std::string fieldname);
   std::vector<ArrayCell>& operator()(std::string fieldname);
+  Cell* find_cell(std::string fieldname);  // nullptr on miss; no insert
   bool load();
   bool del_row();
   bool del_arr_index();

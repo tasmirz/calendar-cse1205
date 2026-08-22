@@ -42,6 +42,17 @@ void Database::add(std::string tablename, Schema* schema) {
 
   // create table, according to schema
 }
-Table& Database::operator[](std::string key) { return *tables[key]; }
+Table& Database::operator[](std::string key) {
+  // tables[key] silently inserts a nullptr on miss, which would segfault on
+  // deref. Refuse instead so the caller learns the table is missing.
+  auto it = tables.find(key);
+  if (it == tables.end() || it->second == nullptr) {
+    std::cerr << "Database::operator[] unknown table: '" << key
+              << "'. Did you forget to call Database::add?"
+              << std::endl;
+    std::exit(1);
+  }
+  return *it->second;
+}
 
 /* table loads schema itself */

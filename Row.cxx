@@ -90,21 +90,19 @@ bool Row::load() {
   return true;
 };
 Cell& Row::operator[](std::string fieldname) {
-  // Returning a default-constructed Cell on miss means callers can silently
-  // read garbage. We instead look the key up and, if missing, hand back a
-  // reference to a thread-local sentinel cell so the caller gets a defined
-  // (empty) Cell rather than an inserted one that gets saved on round-trip.
-  static Cell sentinel;
-  auto it = cells.find(fieldname);
-  if (it == cells.end()) return sentinel;
-  return it->second;
+  // Inserting on miss is intentional: the write API (row[name].set(...))
+  // depends on map::operator[] materialising the cell so save() can find it
+  // later. Read-only code that wants strict semantics should use find_cell()
+  // (below).
+  return cells[fieldname];
 }
 std::vector<ArrayCell>& Row::operator()(std::string fieldname) {
-  // Same idea: don't insert a new vector on miss.
-  static std::vector<ArrayCell> sentinel;
-  auto it = array_cells.find(fieldname);
-  if (it == array_cells.end()) return sentinel;
-  return it->second;
+  return array_cells[fieldname];
+}
+
+Cell* Row::find_cell(std::string fieldname) {
+  auto it = cells.find(fieldname);
+  return it == cells.end() ? nullptr : &it->second;
 }
 
 bool Row::save() {
