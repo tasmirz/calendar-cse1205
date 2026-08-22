@@ -33,7 +33,7 @@ void title() {
   // std::cout << std::endl << std::endl;
 }
 void displayCalendar(int year, int month, const std::vector<int> &eventDays,
-                     int startDay) {
+                     int startDay, int today) {
   std::string monthNames[] = {"January",   "February", "March",    "April",
                               "May",       "June",     "July",     "August",
                               "September", "October",  "November", "December"};
@@ -55,9 +55,16 @@ void displayCalendar(int year, int month, const std::vector<int> &eventDays,
       if (i == 0 && j < startDay + 1) {
         std::cout << std::setw(W) << " ";
       } else if (dayCount <= daysInMonth) {
-        if (std::find(eventDays.begin(), eventDays.end(), dayCount) !=
-            eventDays.end()) {
-          std::cout << std::setw(W - 1) << dayCount << ".";
+        bool hasEvent = std::find(eventDays.begin(), eventDays.end(),
+                                  dayCount) != eventDays.end();
+        bool isToday = (dayCount == today);
+        // Markers (single character each): today = '*', event = '.'.
+        // A day can carry both; trailing "*." for today-with-event.
+        std::string markers;
+        if (isToday) markers += '*';
+        if (hasEvent) markers += '.';
+        if (!markers.empty()) {
+          std::cout << std::setw(W - markers.size()) << dayCount << markers;
         } else {
           std::cout << std::setw(W) << dayCount;
         }
@@ -92,7 +99,7 @@ void calendar() {
   std::tm *localTime = std::localtime(&now);
   int year = localTime->tm_year + 1900;
   int month = localTime->tm_mon + 1;
-  int day = localTime->tm_mday + 1;
+  int today = localTime->tm_mday;
   int weekday = localTime->tm_wday;
 
   int a = year * 10000 + month * 100;
@@ -104,7 +111,7 @@ void calendar() {
     }
   }
 
-  displayCalendar(year, month, eventDays, weekday);
+  displayCalendar(year, month, eventDays, weekday, today);
 }
 void todo_list() {
   std::cout << "TodoList :\n";
